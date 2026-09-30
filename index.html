@@ -1,6 +1,7 @@
 <!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Solar System Explorer</title>
 <meta name="description" content="Visualisasi 3D tata surya interaktif berbasis Three.js WebGPU: orbit Kepler, skala visualisasi, dan data planet dari NASA Planetary Fact Sheet.">
 <link rel="stylesheet" href="./assets/css/style.css">
+<link rel="icon" href="./assets/logo.svg" type="image/svg+xml">
 <script type="importmap">
 {"imports":{
  "three":"./assets/lib/three.webgpu.min.js",
@@ -47,7 +48,7 @@
     document.getElementById("ld").classList.add("done");
   };
   if(location.protocol==="file:"){
-    show("Halaman ini dibuka langsung dari berkas (<code>file://</code>), sehingga modul JavaScript diblokir kebijakan CORS dan aplikasi tidak dapat dijalankan.<br><br>Buka lewat server, misalnya:<br><b><a href=\"http://localhost/solar-system/\">http://localhost/solar-system/</a></b>");
+    show("Halaman ini dibuka langsung dari berkas (<code>file://</code>), sehingga modul JavaScript diblokir kebijakan CORS dan aplikasi tidak dapat dijalankan.<br><br>Buka lewat server, misalnya:<br><b><a href=\"http://localhost/SolarSystem/\">http://localhost/SolarSystem/</a></b>");
     return;
   }
   var s=document.createElement("script");

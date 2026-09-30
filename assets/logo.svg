@@ -1,0 +1,27 @@
+<!-- KONSEP 1: Orbit Minimalis & Inti Surya (Cocok buat Navbar / Favicon) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFD166"/>
+      <stop offset="100%" stop-color="#FF70A6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4CC9F0"/>
+      <stop offset="100%" stop-color="#4361EE"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Glow -->
+  <circle cx="100" cy="100" r="45" fill="url(#sunGlow)"/>
+  
+  <!-- Core Sun -->
+  <circle cx="100" cy="100" r="18" fill="#FFD166"/>
+  
+  <!-- Elliptical Orbits -->
+  <ellipse cx="100" cy="100" rx="75" ry="32" fill="none" stroke="url(#orbitGrad)" stroke-width="3.5" transform="rotate(-25 100 100)"/>
+  <ellipse cx="100" cy="100" rx="75" ry="32" fill="none" stroke="url(#orbitGrad)" stroke-width="2" stroke-dasharray="6,6" transform="rotate(35 100 100)" opacity="0.6"/>
+  
+  <!-- Planets on Orbits -->
+  <circle cx="162" cy="72" r="7" fill="#4CC9F0"/>
+  <circle cx="45" cy="125" r="4" fill="#F72585"/>
+</svg>
