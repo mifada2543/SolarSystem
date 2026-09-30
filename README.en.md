@@ -68,6 +68,14 @@ Three things set it apart:
 
 - **Keplerian orbits** — positions derive from JPL orbital elements (J2000 epoch), not
   decorative circles.
+- **Sun rotation** — driven by the 607.1 h (25.3 day) data value with the 7.25° axial
+  tilt. Previously a hardcoded `0.004 rad/day` constant (one rotation ≈ 4.3 years) left
+  the Sun effectively motionless.
+- **Barycenter** — the Sun is no longer pinned to the world origin (0,0,0): it revolves
+  around the system's center of mass (amplitude ±0.5–1.5 solar radii, dominated by
+  Jupiter's 11.86-year period), and `sunLight` moves with it so the lighting direction
+  stays correct. The `Barycenter` button (Options panel) shows the center-of-mass
+  marker together with its connector line to the Sun.
 - **Adjustable speed** from `0.1×` to `100×`, with time units per second (minutes →
   years) and a simulation date picker, including `±1 day` / `±1 month` / `±1 year`
   jumps, `J2000` and `Today` buttons, and a custom date input.
@@ -79,10 +87,21 @@ Three things set it apart:
   `Scientific (≈1:1)` where 1 world unit = 10⁶ km.
 - **2K planet textures** stored locally with **automatic procedural fallback** — if a
   file fails to load, the view stays intact with no error message.
-- **Constellations**, an asteroid belt with pixel-based point sizing, orbits for 7 moons
-  (Moon, Io, Europa, Ganymede, Callisto, Titan, Triton) that appear automatically once
-  their host is close enough, Earth's night city lights, atmospheres, and Saturn's ring
-  shadows.
+- **Constellations**, an asteroid belt with pixel-based point sizing, elliptical orbits
+  for 7 moons (Moon, Io, Europa, Ganymede, Callisto, Titan, Triton — shaped by each
+  body's own eccentricity) that appear automatically once their host is close enough,
+  Earth's night city lights, atmospheres, and Saturn's ring shadows.
+- **Kuiper belt** beyond Neptune's orbit — about 2,600 particles in two populations:
+  a "cold" classical one (42–47 AU, thin band) and a "hot" one (30–50 AU, thicker and
+  more inclined). Always visible with no dedicated toggle, and also drawn as a faint
+  band on the navigation map. Its randomness uses its own fixed-seed PRNG, so it
+  **does not shift** the shared `rnd()` seed — the asteroid belt, star colors, and
+  existing textures stay identical.
+- **22 constellations** — Orion, Scorpius, Ursa Major, … drawn along the official
+  **Sky & Telescope 2014** figures (the same ones Stellarium uses), plus a **star point**
+  at every vertex sized by magnitude (≈1.7–6.8 px). Labels are in Indonesian and
+  automatically **never overlap**: constellations with brighter stars win priority, the
+  rest wait until there is room on screen.
 
 ### Navigation
 
@@ -229,16 +248,16 @@ SolarSystem/
 | File | Role |
 |---|---|
 | `state.js` | base state + utils — **no local imports** |
-| `data.js` | planet data (NASA/JPL) — **no local imports** |
-| `core.js` | procedural textures (`rnd` / `mk` / `blob` / `texFor` / `glowTex`) |
+| `data.js` | planet data (NASA/JPL) + coordinates for 22 constellations (HYG · Sky & Telescope) — **no local imports** |
+| `core.js` | procedural textures (`rnd` / `lcg` / `mk` / `blob` / `texFor` / `glowTex`) |
 | `shaders.js` | TSL: atmosphere, city lights, Saturn ring shadows |
 | `textures.js` | 2K texture loader (fail-safe → procedural) |
 | `bodies.js` | renderer, scene, camera, object construction |
-| `orbits.js` | Kepler, scale modes, belt, constellations, simulation |
+| `orbits.js` | Kepler, scale modes, asteroid & Kuiper belts, constellations, simulation |
 | `navigate.js` | camera, picking, hover, scroll-zoom, HUD card |
 | `ui.js` | info panel, controls, search, HUD, audio |
 | `minimap.js` | 3D navigation map (scissor viewport) |
-| `main.js` | `init()` + `loop()` |
+| `main.js` | `init()` + `loop()` + constellation label filter (overlap handling) |
 
 Imports always point downward toward `state.js` / `data.js`; neither imports any local
 module, so circular imports are impossible.
@@ -266,14 +285,36 @@ update the importmap in `index.html`. The file list is also written as a comment
 ## Data & attribution
 
 - **Planet physics** — [NASA Planetary Fact Sheet](https://nssdc.gsfc.nasa.gov/planetary/factsheet/)
-- **Orbital elements** — JPL *Approximate Positions of the Planets* (Standish), J2000 epoch
-- **Dwarf planets** (Ceres, Eris, Haumea, Makemake) — JPL Small-Body Database
+- **Orbital elements** — JPL [*Approximate Positions of the Planets*](https://ssd.jpl.nasa.gov/planets/approx_pos.html)
+  (Standish), J2000 epoch — **including eccentricity** for the eight planets (full JPL
+  precision rather than the NASA Fact Sheet rounding; the largest previous gaps were
+  Neptune 16.4% and Saturn 3.5%)
+- **Trajectory status per body class** (accuracy of the drawn shapes):
+
+  | Body | Trajectory drawn |
+  |---|---|
+  | 8 planets + 9 dwarf planets | full Kepler ellipse: focus at the Sun, JPL e/i/Ω/ϖ, true phase from J2000 `L0` |
+  | Moon + 6 satellites | ellipse from the data `e` (simplified phase M₀ = 0 at J2000; inclination not modelled) |
+  | Asteroid belt | random circles + rigid disk at 4.40 yr — Kepler in 2.1–3.3 AU is actually 3.04–5.99 yr |
+  | Kuiper belt | random circles + rigid disk at 272 yr — Kepler in 30–50 AU is actually 164–354 yr |
+- **Dwarf planets** — [JPL Small-Body Database](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html)
+  for Ceres, Quaoar, Orcus, Salacia, and Ixion (epoch 2461200.5); Wikipedia for
+  Eris, Haumea, and Makemake. All converted to the J2000 epoch; physical data and
+  moons of the four KBOs (Quaoar 1, Orcus 1, Salacia 1, Ixion 0) also come from Wikipedia.
+- **Moon counts** — JPL [*Planetary Satellite Discovery Circumstances*](https://ssd.jpl.nasa.gov/sats/discovery.html)
+  (Jupiter 115, Saturn 293, Uranus 29, Neptune 16, Pluto 5; the NASA Fact Sheet of Mar 2025
+  is already out of date and these counts keep growing)
 - **Planet textures** — [Solar System Scope — Textures](https://www.solarsystemscope.com/textures/),
   **CC BY 4.0** (mostly based on NASA imagery). The file list, including the
   `.tif` → `.png` conversions, is recorded in
   [`assets/textures/ATTRIBUTION.txt`](assets/textures/ATTRIBUTION.txt); credit is also
   shown inside the app. **Do not delete these files** — attribution is a condition of the
   license.
+- **Constellations** — star coordinates and magnitudes from the
+  [HYG Database](https://github.com/astronexus/HYG-Database) (v41, J2000 positions, RA in
+  hours); the lines follow the official **Sky & Telescope 2014** figures — the
+  [`SnT_constellations.txt`](https://github.com/Stellarium/stellarium/blob/master/skycultures/modern_st/SnT_constellations.txt)
+  file also bundled with Stellarium — primary figures only (weight 1–2).
 
 ---
 
@@ -285,6 +326,11 @@ These are easy to overlook and break things badly if changed casually:
   planet textures, the asteroid belt, and star colors, so reordering changes the entire
   look. `assets/js/textures.js` honours this rule: `texFor()` is still called first as
   before, and the real image is swapped in asynchronously afterwards.
+  **New objects must use their own PRNG**, never `rnd()`: textures go through `lcg()`
+  from `core.js` (per-object seed via `texSeed` in `data.js`), while Kuiper belt
+  particles use a fixed-seed `20250930` LCG in `orbits.js`. So adding the 4 KBOs and
+  the belt consumes none of the shared seed, leaving the seed position at `buildBelt()`
+  exactly as before — the star field was verified pixel-identical by screenshot diff.
 - All lines must be `THREE.Line` — `WebGPURenderer` does not support `LineLoop`.
 - Custom shaders must be TSL — `ShaderMaterial` is not registered in
   `StandardNodeLibrary`.
@@ -292,6 +338,13 @@ These are easy to overlook and break things badly if changed casually:
   `left`/`bottom` must be reset.
 - `state.js` and `data.js` must not import any local module — this is what prevents
   import cycles.
+- **Constellation star points use `InstancedMesh`, not `THREE.Points`** — the WebGPU
+  backend forces `gl_PointSize = 1.0`, so `Points` would always be 1 px with no magnitude
+  variation. Each point's size is derived from its magnitude, converted to world units at
+  radius 1100 (≈1.7–6.8 px), and recomputed whenever the window height changes. The
+  constellation code **never calls `rnd()`** — proven by identical hashes for star field
+  positions & colors, belt translations, and procedural textures before and after the
+  change.
 
 ---
 

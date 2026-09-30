@@ -19,7 +19,7 @@ import {ellipse,MN} from './orbits.js';
 import {flyTo,dimOrbits} from './navigate.js';
 import {focus,closeInfo} from './ui.js';
 
-let mapScene,mapCam,el,btn,mq,ready=false,lin=false,mapZoom=1,lastKey="",belt=null;
+let mapScene,mapCam,el,btn,mq,ready=false,lin=false,mapZoom=1,lastKey="",belt=null,kbelt=null;
 let camDot,camLine;const dots=new Map(),halos=new Map(),labels=[],orbits=[];
 const v=new THREE.Vector3(),v2=new THREE.Vector3(),dv=new THREE.Vector3(),mapUp=new THREE.Vector3(0,0,-1);
 let half=1;
@@ -43,11 +43,15 @@ function rebuild(){
   const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
     new THREE.LineBasicMaterial({color:0x6d86cc,transparent:true,opacity:.5,depthWrite:false}));
   line.frustumCulled=false;mapScene.add(line);orbits.push(line)}
+ /* mkRing: satu pita cincin datar. Radius LUAR sabuk Kuiper dijepit NR() oleh mapR(),
+    memang disengaja — peta navigasi berhenti pada jarak Pluto. */
+ const mkRing=(a,b,col,op)=>{const g=new THREE.RingGeometry(a,b,128);g.rotateX(-Math.PI/2);
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,side:THREE.DoubleSide,depthWrite:false}));
+  m.frustumCulled=false;mapScene.add(m);return m};
  if(belt){belt.geometry.dispose();mapScene.remove(belt)}
- const g=new THREE.RingGeometry(mapR(orbOf(2.1*149.6)),mapR(orbOf(3.3*149.6)),128);
- g.rotateX(-Math.PI/2);
- belt=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x9a9086,transparent:true,opacity:.2,side:THREE.DoubleSide,depthWrite:false}));
- belt.frustumCulled=false;mapScene.add(belt);
+ belt=mkRing(mapR(orbOf(2.1*149.6)),mapR(orbOf(3.3*149.6)),0x9a9086,.2);
+ if(kbelt){kbelt.geometry.dispose();mapScene.remove(kbelt)}
+ kbelt=mkRing(mapR(orbOf(30*149.6)),mapR(orbOf(50*149.6)),0x7f95b5,.18);
 }
 
 /* ---- penanda arah kamera pengguna ---- */

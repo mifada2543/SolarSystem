@@ -16,17 +16,20 @@ function toggleSound(){try{st.snd=!st.snd;if(st.snd&&!AC){AC=new(window.AudioCon
 const BAR=(v,k)=>v==null?"":`<div class="bar" style="width:${Math.min(100,Math.max(2,v/Math.max(...PL.map(p=>p[k]))*100))}%"></div>`;
 const R=(k,v)=>`<div class="r"><span>${k}</span><b>${v}</b></div>`;
 const km=v=>st.imp?fmt(v*.621371)+" mi":fmt(v)+" km",tc=t=>t==null?"n/a":st.imp?fmt(t*9/5+32)+" °F":fmt(t)+" °C";
-const gv=g=>g==null?"n/a":st.imp?fmt(g*3.28084,1)+" ft/s²":fmt(g,1)+" m/s²",ms=m=>`${fmt(m[0],3)} × 10<sup>${m[1]}</sup> kg`;
+const gv=g=>g==null?"n/a":st.imp?fmt(g*3.28084,1)+" ft/s²":fmt(g,1)+" m/s²",
+      // massa boleh null (Ixion belum diketahui massanya) — jangan diindeks buta
+      ms=m=>m==null?"n/a":`${fmt(m[0],3)} × 10<sup>${m[1]}</sup> kg`,
+      dns=v=>v==null?"n/a":fmt(v)+" kg/m³";
 const dur=h=>h==null?"n/a":h<72?`${fmt(h,1)} jam`:`${fmt(h/24,1)} hari`,yr=d=>d==null?"n/a":d>=730?`${fmt(d/365.25,2)} tahun Bumi`:`${fmt(d,1)} hari`;
 
 function showInfo(b){const d=b.d,i=PL.indexOf(d)+1,el=$("#info");
  el.innerHTML=`<button id="cl" style="float:right" aria-label="Tutup panel">Tutup</button><h2>${d.alias}</h2><div class="ty">${d.alias} · ${d.type}${d.moon||d.dwarf||d.star?"":" · Planet ke-"+i+" dari Matahari"}</div>
- <h3>Karakteristik fisik</h3>${R("Diameter",km(d.dia))}${BAR(d.dia,"dia")}${R("Massa",ms(d.mass))}${R("Gravitasi",gv(d.g))}${BAR(d.g,"g")}${R("Kepadatan",fmt(d.dens)+" kg/m³")}${BAR(d.dens,"dens")}${R("Suhu rata-rata",tc(d.temp))}${R("Durasi hari (rotasi)",dur(d.rot))}${R("Durasi tahun",yr(d.year))}${R("Kemiringan sumbu",d.tilt==null?"n/a":fmt(d.tilt,1)+"°")}
- <h3>Orbit</h3>${d.star?R("Posisi","Pusat Tata Surya"):R(d.moon?"Jarak dari planet induk":"Jarak rata-rata dari Matahari",km(Math.round(d.dist*1e6)))+R("Periode orbital",yr(d.year))+R("Kecepatan orbital",st.imp?fmt(d.spd*.621371,1)+" mi/s":fmt(d.spd,1)+" km/s")+R("Eksentrisitas",fmt(d.ecc,3))}
+ <h3>Karakteristik fisik</h3>${R("Diameter",km(d.dia))}${BAR(d.dia,"dia")}${R("Massa",ms(d.mass))}${R("Gravitasi",gv(d.g))}${BAR(d.g,"g")}${R("Kepadatan",dns(d.dens))}${BAR(d.dens,"dens")}${R("Suhu rata-rata",tc(d.temp))}${R("Durasi hari (rotasi)",dur(d.rot))}${R("Durasi tahun",yr(d.year))}${R("Kemiringan sumbu",d.tilt==null?"n/a":fmt(d.tilt,1)+"°")}
+ <h3>Orbit</h3>${d.star?R("Posisi","Mengorbit barycenter sistem (pusat massa)"):R(d.moon?"Jarak dari planet induk":"Jarak rata-rata dari Matahari",km(Math.round(d.dist*1e6)))+R("Periode orbital",yr(d.year))+R("Kecepatan orbital",st.imp?fmt(d.spd*.621371,1)+" mi/s":fmt(d.spd,1)+" km/s")+R("Eksentrisitas",fmt(d.ecc,4))}
  <h3>Lingkungan</h3>${R(d.star?"Lapisan luar":"Atmosfer",d.star?"Fotosfer, kromosfer, dan korona":d.moon?"Eksosfer":d.atm.length?"Ya":"Tidak")}<div class="nt" style="margin:2px 0">${d.atm.join(" · ")}</div>${R(d.star?"Planet":"Satelit alami",d.moons)}${R("Cincin",d.ring)}
  <h3>Deskripsi</h3><p>${d.desc}</p>
  ${d.moon?"":`<h3>Bandingkan</h3><select id="cs" aria-label="Bandingkan dengan"><option value="">— pilih planet —</option>${PL.filter(p=>p!==d).map(p=>`<option value="${p.id}">${d.alias} vs ${p.alias}</option>`).join("")}</select><div id="ct"></div>`}
- <p class="nt">Elemen orbit (inklinasi, node, perihelion): JPL Approximate Positions of the Planets (ssd.jpl.nasa.gov/planets/approx_pos.html). Data fisik: NASA Planetary Fact Sheet (<a href="${SRC}" target="_blank" rel="noopener">sumber</a>). ${d.dwarf&&d.id!=="pluto"?"Planet kerdil: elemen orbit dari JPL Small-Body Database (epoch berbeda tiap objek); data fisik dari Wikipedia/NASA, beberapa nilai (rotasi, kemiringan) belum pasti. ":""}Jumlah satelit berubah seiring penemuan baru (NASA/IAU). Ukuran & jarak pada tampilan 3D adalah <b>apresiasi visualisasi</b>.</p>
+ <p class="nt">Elemen orbit &amp; eksentrisitas (inklinasi, node, perihelion, e): JPL <a href="https://ssd.jpl.nasa.gov/planets/approx_pos.html" target="_blank" rel="noopener">Approximate Positions of the Planets</a> (Standish, epoch J2000). Data fisik: NASA Planetary Fact Sheet (<a href="${SRC}" target="_blank" rel="noopener">sumber</a>). ${d.dwarf&&d.id!=="pluto"?"Planet kerdil: elemen orbit & periode dari JPL Small-Body Database (Ceres, Quaoar, Orcus, Salacia, Ixion — epoch 2461200.5) atau Wikipedia (Eris, Haumea, Makemake), dikonversi ke J2000; data fisik dari Wikipedia/NASA; beberapa nilai (massa, gravitasi, rotasi, kemiringan) belum pasti dan tampil sebagai n/a. ":""}Jumlah satelit: JPL SSD &laquo;Planetary Satellite Discovery Circumstances&raquo; dan berubah seiring penemuan baru (NASA/IAU). Ukuran & jarak pada tampilan 3D adalah <b>apresiasi visualisasi</b>.</p>
  <button id="ex">Jelajahi ${d.alias}</button> <button id="ov">Seluruh Tata Surya</button>`;
  el.classList.add("open");
  document.body.classList.add("info-open"); // D2: kartu #hud bergeser menjauhi panel info
@@ -67,7 +70,7 @@ export function updHud(){
  if(t!==hudS){hudS=t;$("#hudl").innerHTML=t} // di-throttle: tidak lagi menulis DOM tiap frame + tanpa aria-live
 }
 
-export function syncBtns(){$("#bp").textContent=st.paused?"Lanjut":"Jeda";$("#bo").classList.toggle("on",st.orbits);$("#bl").classList.toggle("on",st.labels);$("#bm").classList.toggle("on",st.reduced);$("#bh").classList.toggle("on",st.pauseSel);
+export function syncBtns(){$("#bp").textContent=st.paused?"Lanjut":"Jeda";$("#bo").classList.toggle("on",st.orbits);$("#bl").classList.toggle("on",st.labels);$("#bm").classList.toggle("on",st.reduced);$("#bh").classList.toggle("on",st.pauseSel);$("#bb").classList.toggle("on",st.bb);
  $("#spd").querySelectorAll("button").forEach(b=>b.classList.toggle("on",+b.dataset.s===st.speed));
  scene&&scene.children.forEach(o=>{if(o.userData.orbit)o.visible=st.orbits});bodies.forEach(b=>b.el.style.display=st.labels?"":"none");
  cLb.forEach(l=>l.el.style.display=(consOn&&st.labels)?"":"none");dimOrbits()}
@@ -79,6 +82,7 @@ export function buildUI(){
  $("#bf").onclick=()=>st.sel&&focus(st.sel);$("#bo").onclick=()=>{st.orbits=!st.orbits;syncBtns()};$("#bl").onclick=()=>{st.labels=!st.labels;syncBtns()};
  $("#bu").onclick=()=>{st.imp=!st.imp;$("#bu").textContent=st.imp?"mi · °F":"km · °C";st.sel&&showInfo(st.sel)};
  $("#bm").onclick=()=>{st.reduced=!st.reduced;syncBtns()};$("#bh").onclick=()=>{st.pauseSel=!st.pauseSel;syncBtns()};
+ $("#bb").onclick=()=>{st.bb=!st.bb;syncBtns()}; // penanda barycenter (titik pusat massa di origin)
  // panel-open dipakai CSS (≤860px) untuk menyembunyikan peta selama panel diperluas
  const setPanel=()=>document.body.classList.toggle("panel-open",!$("#body").classList.contains("hide"));
  $("#tg").onclick=()=>{const h=$("#body").classList.toggle("hide");$("#tg").textContent=h?"+":"–";$("#tg").setAttribute("aria-expanded",!h);setPanel()};

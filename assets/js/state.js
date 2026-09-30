@@ -8,7 +8,7 @@ export const fmt=(n,d=0)=>n==null?"n/a":n.toLocaleString(ID,{maximumFractionDigi
 /* autoFocus: st.sel yang terisi LEWAT SCROLL (zoom ke planet di bawah kursor), bukan lewat
    klik. Bedanya penting: scroll-keluar hanya boleh melepas fokus otomatis ini, sedangkan
    pilihan yang diklik sendiri harus bertahan sampai dibuka panel / tampilan seluruh. */
-export const st={paused:false,speed:10,unit:1,imp:false,orbits:true,labels:true,reduced:matchMedia("(prefers-reduced-motion: reduce)").matches,sel:null,autoFocus:false,pauseSel:false,date:new Date(),cmp:null,snd:false};
+export const st={paused:false,speed:10,unit:1,imp:false,orbits:true,labels:true,reduced:matchMedia("(prefers-reduced-motion: reduce)").matches,sel:null,autoFocus:false,pauseSel:false,date:new Date(),cmp:null,snd:false,bb:false}; // bb: penanda barycenter
 export const UNITS=[["1 menit",1/1440],["1 jam",1/24],["1 hari",1],["1 bulan",30.44],["1 tahun",365.25]];
 export const J2000=Date.UTC(2000,0,1,12);
 export const LT=[];

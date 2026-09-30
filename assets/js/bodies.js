@@ -4,8 +4,8 @@
 import * as THREE from 'three/webgpu';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {PL,MOON,SUN,SATROWS} from './data.js';
-import {bodies,ac,radOf,orbOf,LT} from './state.js';
-import {rnd,mk,blob,texFor,glowTex} from './core.js';
+import {bodies,ac,radOf,orbOf,LT,D2R} from './state.js';
+import {rnd,lcg,mk,blob,texFor,glowTex} from './core.js';
 import {atmoGeo,atmoMat,patchShadow,cityLights} from './shaders.js';
 
 export let renderer,scene,camera,controls,clock,sun,sunLight,stars,BK="—";
@@ -35,15 +35,22 @@ export function buildStars(){
 
 export function buildSun(){
  const sunT=mk(512,256,(x,w,h)=>{x.fillStyle="#f29a2e";x.fillRect(0,0,w,h);blob(x,w,h,"#ffd36b",300,3,14,.15,.5);blob(x,w,h,"#c9601a",200,2,10,.1,.35)});
- sun=new THREE.Mesh(new THREE.SphereGeometry(5,48,32),new THREE.MeshBasicMaterial({map:sunT}));scene.add(sun);
- [[28,"rgba(255,190,90,",.9],[60,"rgba(255,150,60,",.35]].forEach(g=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(g[1]),blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:g[2]}));s.scale.set(g[0],g[0],1);sun.add(s)});
- addBody(SUN,sun,sun,5,0,null); // grp === mesh: diperbesar/dikecilkan oleh applyScale()
+ // Struktur sama seperti planet (grup > tilt > mesh): `sun` (grup) memegang scale & posisi
+ // barycenter, grup `tilt` menerapkan kemiringan sumbu SUN.tilt (7,25°) yang dulu tidak
+ // pernah dipakai, dan `mesh` sendirilah yang menerima spin berbasis data SUN.rot (607,1 jam).
+ const mesh=new THREE.Mesh(new THREE.SphereGeometry(5,48,32),new THREE.MeshBasicMaterial({map:sunT}));
+ const tilt=new THREE.Group();tilt.rotation.z=SUN.tilt*D2R;tilt.add(mesh);
+ sun=new THREE.Group();sun.add(tilt);scene.add(sun);
+ [[28,"rgba(255,190,90,",.9],[60,"rgba(255,150,60,",.35]].forEach(g=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(g[1]),blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:g[2]}));s.scale.set(g[0],g[0],1);sun.add(s)}); // glow simetris radial -> di grup luar
+ addBody(SUN,sun,mesh,5,0,null); // grp=sun (applyScale & barycenter), mesh=mesh (rotasi sumbu)
 }
 
 export function buildPlanets(){
  PL.forEach(d=>{
   const r=radOf(d.dia),oR=orbOf(d.dist),grp=new THREE.Group(),tilt=new THREE.Group();tilt.rotation.z=d.tilt*Math.PI/180;
-  const mesh=new THREE.Mesh(new THREE.SphereGeometry(r,48,32),new THREE.MeshStandardMaterial({map:texFor(d.tex),roughness:.9,metalness:0,emissive:0x000000}));
+  // texSeed>0 hanya untuk 4 KBO baru: memakai lcg() lokal sehingga pemanggilan rnd()
+  // bersama tetap persis seperti sebelum KBO ditambahkan (lihat core.js).
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(r,48,32),new THREE.MeshStandardMaterial({map:texFor(d.tex,d.texSeed?lcg(d.texSeed):0),roughness:.9,metalness:0,emissive:0x000000}));
   tilt.add(mesh);grp.add(tilt);grp.userData.tilt=tilt;
   if(d.tex[0]!=="g"){mesh.material.bumpMap=mesh.material.map;mesh.material.bumpScale=d.tex[0]==="e"?.3:1.2}
   if(d.id==="earth"){const m=mesh.material;m.emissive.setHex(0xffffff);m.emissiveMap=mk(512,256,(x,w,h)=>{x.fillStyle="#000";x.fillRect(0,0,w,h);x.fillStyle="rgba(255,190,110,.9)";LT.forEach(q=>x.fillRect(q[0],q[1],1.6,1.6))});cityLights(m)}
