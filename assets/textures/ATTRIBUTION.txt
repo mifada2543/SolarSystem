@@ -1,0 +1,50 @@
+ATRIBUSI TEKSTUR / TEXTURE ATTRIBUTION
+=======================================
+
+Seluruh berkas gambar dalam folder ini adalah unduhan 2K dari:
+
+    https://www.solarsystemscope.com/textures/
+    Solar System Scope (www.solarsystemscope.com)
+
+Lisensi: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+Sebagian besar tekstur berbasis citra / data NASA (NASA Visual Earth, NASA/JPL,
+Hubble). NASA berada di domain publik; namun komposit yang diproses oleh Solar
+System Scope dilisensikan CC BY 4.0, sehingga atribusi ini wajib tetap ada.
+
+Berkas yang digunakan
+---------------------
+    2k_sun.jpg                 Matahari
+    2k_mercury.jpg             Merkurius
+    2k_venus_atmosphere.jpg    Venus (lapisan awan)
+    2k_earth_daymap.jpg        Bumi (siang)
+    2k_earth_nightmap.jpg      Bumi (malam / lampu kota)
+    2k_earth_clouds.jpg        Awan Bumi
+    2k_earth_normal_map.png    Peta normal Bumi (dikonversi dari .tif oleh proyek ini)
+    2k_earth_specular_map.png  Peta spekulasi Bumi (dikonversi dari .tif oleh proyek ini)
+    2k_moon.jpg                Bulan
+    2k_mars.jpg                Mars
+    2k_jupiter.jpg             Jupiter
+    2k_saturn.jpg              Saturnus
+    2k_saturn_ring_alpha.png   Cincin Saturnus (dengan kanal alfa)
+    2k_uranus.jpg              Uranus
+    2k_neptune.jpg             Neptunus
+    2k_ceres_fictional.jpg     Ceres (ilustrasi)
+    2k_eris_fictional.jpg      Eris (ilustrasi)
+    2k_haumea_fictional.jpg    Haumea (ilustrasi)
+    2k_makemake_fictional.jpg  Makemake (ilustrasi)
+
+Catatan:
+* Tidak ada tekstur untuk Pluto — Solar System Scope tidak menyediakannya,
+  sehingga Pluto memakai tekstur prosedural buatan proyek ini.
+* Dua berkas .tif asli (normal & spekulasi Bumi) diubah ke .png karena peramban
+  tidak mendukung TIFF; isinya tidak diubah selain format/warna.
+* "fictional" berarti ilustrasi artistik, bukan foto nyata.
+
+Penggunaan dalam proyek ini gagal-aman: bila berkas tidak tersedia, aplikasi
+kembali ke tekstur prosedural (lihat js/textures.js).
+
+DIKONVERSI OLEH PROYEK INI / CONVERTED BY THIS PROJECT
+2k_earth_normal_map.png  <- 2k_earth_normal_map.tif
+2k_earth_specular_map.png <- 2k_earth_specular_map.tif
