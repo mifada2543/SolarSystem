@@ -1,0 +1,153 @@
+SOLAR SYSTEM EXPLORER — NOTICE
+===============================
+
+Copyright (C) 2026 Mifada
+
+Solar System Explorer is an interactive 3D solar-system visualization that
+runs in a web browser using JavaScript, WebGPU/WebGL2, and locally bundled
+assets.
+
+Unless a file or component states otherwise, the source code of this project
+is licensed under the GNU General Public License, version 3 (GPLv3). A copy
+of that license is provided in the LICENSE file.
+
+This NOTICE file is informational and does not modify, replace, or add to the
+terms of any applicable license. When redistributing this project, preserve
+this file, LICENSE, the texture attribution file, and all applicable notices
+included with third-party or generated materials.
+
+PROJECT MATERIALS
+-----------------
+
+The following materials are original project materials unless otherwise
+indicated:
+
+* JavaScript source code and application logic
+* HTML and CSS interface code
+* Procedural textures and rendering code created by this project
+* Project documentation and configuration
+* Project-specific logos and interface elements, unless separately identified
+
+These materials are distributed under the GPLv3, subject to the terms of the
+LICENSE file.
+
+THIRD-PARTY SOFTWARE AND LIBRARIES
+----------------------------------
+
+This project includes or is designed to work with the following independent
+software and resources:
+
+* three.js — https://threejs.org/
+  The locally bundled three.js files are third-party software and remain
+  subject to the license and notices provided by the three.js project.
+
+* WebGPU and WebGL — browser platform technologies implemented by the user's
+  browser and operating system.
+
+Third-party software is separate from the original project code. When
+redistributing bundled third-party files, retain the license notices shipped
+with those files and comply with their applicable license terms.
+
+PLANET TEXTURES
+---------------
+
+Planet and solar-system textures in assets/textures/ were obtained from:
+
+    Solar System Scope — https://www.solarsystemscope.com/textures/
+
+The textures are licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0):
+
+    https://creativecommons.org/licenses/by/4.0/
+
+The required attribution and file list are maintained in:
+
+    assets/textures/ATTRIBUTION.txt
+
+That attribution file must remain available when the textures are distributed.
+Some textures are based on NASA imagery or data, but processed composites
+provided by Solar System Scope are attributed under CC BY 4.0 as described in
+the attribution file.
+
+SCIENTIFIC DATA AND REFERENCES
+------------------------------
+
+The project uses or references scientific data and educational resources from:
+
+* NASA Planetary Fact Sheet
+  https://nssdc.gsfc.nasa.gov/planetary/factsheet/
+
+* NASA and the Jet Propulsion Laboratory (JPL)
+  https://www.nasa.gov/
+  https://www.jpl.nasa.gov/
+  https://ssd.jpl.nasa.gov/
+
+* JPL approximate planetary positions and orbital elements
+  https://ssd.jpl.nasa.gov/planets/approx_pos.html
+
+* JPL Small-Body Database
+  https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html
+
+* JPL planetary satellite discovery information
+  https://ssd.jpl.nasa.gov/sats/discovery.html
+
+These sources are credited for the scientific data and references used by the
+project. Their names, logos, publications, and other materials remain the
+property of their respective owners. Data status and reuse conditions should
+be checked with the relevant source when redistributing extracted data or
+creating a separate dataset.
+
+STAR AND CONSTELLATION DATA
+---------------------------
+
+The project uses star coordinates and magnitudes associated with the HYG
+Database:
+
+    https://github.com/astronexus/HYG-Database
+
+Constellation line figures are based on the Sky & Telescope 2014 figures,
+including the corresponding Stellarium sky-culture reference:
+
+    https://github.com/Stellarium/stellarium/blob/master/skycultures/modern_st/SnT_constellations.txt
+
+These upstream projects and datasets are separate works. Preserve their
+attribution and comply with the applicable license or usage terms of the
+specific versions used when redistributing related data.
+
+MODIFIED AND CONVERTED FILES
+----------------------------
+
+The project includes PNG versions of two Earth texture files converted from
+TIFF because browsers do not universally support TIFF:
+
+* assets/textures/2k_earth_normal_map.png
+* assets/textures/2k_earth_specular_map.png
+
+The conversion is documented in assets/textures/ATTRIBUTION.txt. The project
+also contains original procedural fallback textures and fictional artistic
+textures identified in that file.
+
+TRADEMARKS AND NAMES
+--------------------
+
+Solar System Explorer, the project name, and project-specific branding are
+used to identify this project. Their use must not imply endorsement of a
+modified or redistributed version without permission.
+
+NASA, JPL, Solar System Scope, three.js, Stellarium, Sky & Telescope, HYG,
+and other referenced names and marks belong to their respective owners.
+
+NO WARRANTY AND CONTENT RESPONSIBILITY
+--------------------------------------
+
+This project is provided under the terms of the GPLv3, including its warranty
+disclaimer and limitation-of-liability provisions. It is an educational and
+visualization tool; it is not an authoritative source for navigation,
+mission planning, scientific measurement, or safety-critical decisions.
+
+CONTACT
+-------
+
+Project: https://github.com/mifada2543/SolarSystem
+Author:  Mifada
+Email:   mifada2543@gmail.com
