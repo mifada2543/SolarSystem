@@ -57,7 +57,10 @@ export function buildPlanets(){
   if(d.id!=="mercury"){const col=d.id==="venus"?[.9,.75,.4]:d.id==="mars"?[.8,.45,.3]:d.id==="earth"?[.3,.55,1]:d.id==="neptune"?[.3,.45,1]:[.6,.8,.9];
    grp.add(new THREE.Mesh(atmoGeo(r,d.id==="mars"?1.05:1.1),atmoMat(col)))} // atmosfer/limb glow
   let clouds;
-  if(d.id==="earth"){clouds=new THREE.Mesh(new THREE.SphereGeometry(r*1.015,32,24),new THREE.MeshStandardMaterial({map:mk(512,256,(x,w,h)=>{blob(x,w,h,"#fff",160,4,26,.3,.8)}),transparent:true,depthWrite:false,opacity:.75}));tilt.add(clouds)}
+  // Placeholder awan: gumpalan kecil & samar, bukan lingkaran besar. Gumpalan
+  // besar terlihat seperti "kerusakan" selama citra awan asli belum tiba —
+  // dan di jaringan lambat itu bisa bertahan puluhan detik.
+  if(d.id==="earth"){clouds=new THREE.Mesh(new THREE.SphereGeometry(r*1.015,32,24),new THREE.MeshStandardMaterial({map:mk(512,256,(x,w,h)=>{blob(x,w,h,"#fff",320,1.5,9,.05,.22)}),transparent:true,depthWrite:false,opacity:.55}));tilt.add(clouds)}
   if(d.id==="saturn"){
    const g=new THREE.RingGeometry(r*1.35,r*2.4,128),pos=g.attributes.position,uv=g.attributes.uv,v=new THREE.Vector3();
    for(let k=0;k<pos.count;k++){v.fromBufferAttribute(pos,k);uv.setXY(k,(v.length()-r*1.35)/(r*1.05),1)}

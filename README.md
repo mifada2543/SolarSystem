@@ -36,7 +36,7 @@ konfigurasi yang tampil benar-benar mengikuti tanggal simulasi yang kamu pilih.
 
 Tiga hal yang membedakannya:
 
-- **Offline sepenuhnya** — three.js, 19 tekstur 2K (WebP + cadangan JPG/PNG), CSS,
+- **Offline sepenuhnya** — three.js, 19 citra 2K (WebP + cadangan JPG/PNG), CSS,
   dan seluruh modul ikut disertakan di folder proyek. Nol permintaan ke luar, jadi
   aplikasi tetap jalan tanpa koneksi internet.
 - **Renderer modern** — `WebGPURenderer` dengan mundur otomatis ke WebGL2 bila WebGPU
@@ -88,7 +88,9 @@ Tiga hal yang membedakannya:
   berkas gagal dimuat, tampilan tetap utuh tanpa pesan galat. Pemuatannya
   **progresif**: aplikasi tampil seketika dengan tekstur prosedural, lalu tiap citra
   asli (WebP) dipasang pada tempatnya begitu tiba — tidak ada berkas yang dibuang
-  hanya karena telat.
+  hanya karena telat. Awan Bumi punya prioritas tinggi (pozisi ke-3) dan dipasang
+  sendiri begitu tiba, sehingga tidak lagi tertahan sebagai gumpalan bulat
+  prosedural.
 - **Rasi bintang**, sabuk asteroid dengan ukuran titik berbasis piksel, lintasan elips
   7 bulan (Bulan, Io, Europa, Ganymede, Callisto, Titan, Triton — dibentuk dari
   eksentrisitas masing-masing) yang muncul otomatis saat
@@ -238,7 +240,7 @@ SolarSystem/
 │   ├── textures/          19 berkas 2K (jpg/png) + 19 versi .webp + ATTRIBUTION.txt (CC BY 4.0)
 │   │   └── convert-webp.sh  skrip konversi .jpg/.png → .webp (dapat direproduksi)
 │   └── logo.svg           logo & favicon
-└── docs/                  tangkapan layar untuk README
+└── docs/                  tangkapan layar + panduan (pemuatan tekstur, cache Cloudflare)
 ```
 
 ### Modul-modul JavaScript
@@ -249,7 +251,7 @@ SolarSystem/
 | `data.js` | data planet (NASA/JPL) + koordinat 22 rasi (HYG · Sky & Telescope) — **tanpa impor lokal** |
 | `core.js` | tekstur prosedural (`rnd` / `lcg` / `mk` / `blob` / `texFor` / `glowTex`) |
 | `shaders.js` | TSL: atmosfer, lampu kota, bayangan cincin Saturnus |
-| `textures.js` | pemuat tekstur 2K progresif (antrean prioritas, maks. 4 permintaan, WebP → cadangan jpg/png, gagal-aman → prosedural) |
+| `textures.js` | pemuat tekstur 2K progresif (antrean prioritas berdasarkan dampak visual, maks. 4 permintaan, berkas pendukung dijadwalkan bersama citra induknya & dipasang independen, WebP → cadangan jpg/png, gagal-aman → prosedural) |
 | `bodies.js` | renderer, scene, kamera, pembuatan objek |
 | `orbits.js` | Kepler, mode skala, sabuk asteroid & sabuk Kuiper, rasi, simulasi |
 | `navigate.js` | kamera, pick, hover, scroll-zoom, kartu HUD |
@@ -266,18 +268,34 @@ Seluruh aset dilayani dari repo ini sendiri: three.js di `assets/lib/`, citra di
 `assets/textures/`, modul di `assets/js/` — nol permintaan ke luar, jadi aplikasi
 tetap jalan tanpa internet.
 
-Tekstur planet dimuat **progresif** — bukan 19 berkas sekaligus:
+Tekstur dimuat **progresif** — bukan 19 berkas sekaligus. Total ada **19 berkas citra
+nyata: 14 citra tubuh** (Matahari, 8 planet, Bulan, 4 planet kerdil) **dan 5 citra
+pendukung** (awan Bumi, peta malam, peta normal, peta spekulasi Bumi, cincin
+Saturnus). Keduanya dihitung pada indikator HUD `TEKSTUR n/19`.
 
-- **Pemuatan progresif berprioritas** — citra dijadwalkan dalam antrean, Matahari
-  lebih dulu, lalu planet berikutnya. Aplikasi tidak menunggu: ia tampil seketika
+- **Pemuatan progresif berprioritas** — citra dijadwalkan dalam antrean berdasarkan
+  **dampak visual**, bukan sekadar urutan daftar: yang paling sering dilihat dan
+  paling jelas perbedaannya didahulukan. Aplikasi tidak menunggu: ia tampil seketika
   dengan tekstur prosedural, lalu tiap citra asli dipasang pada tempatnya begitu
   tiba. Tampilan "membaik" sendiri tanpa perlu muat ulang.
+- **Berkas pendukung dijadwalkan bersama citra induknya** — awan Bumi, peta malam,
+  peta normal, peta spekulasi Bumi, dan cincin Saturnus tidak lagi menunggu citra
+  induknya selesai; semuanya masuk antrean pada saat yang sama, dan **tiap berkas
+  dipasang sendiri secara independen** begitu tiba. Sebelumnya berkas pendukung
+  baru diminta setelah citra induknya tiba, diberi prioritas paling akhir, lalu
+  digabung dengan `Promise.all` — sehingga awan Bumi baru dipasang setelah
+  berkas pendukung lain yang lebih lambat selesai. Di hosting, peta daytime Bumi
+  selesai di detik ke-14, tetapi berkas awan baru **diunduh** mulai detik ke-46
+  dan **selesai** di detik ke-60: sampai saat itu Bumi masih tampil sebagai
+  gumpalan bulat prosedural. Kini awan Bumi masuk kelompok unduhan awal dan
+  tampil jauh lebih cepat.
 - **Maksimal 4 permintaan bersamaan** — antrean menjaga empat permintaan tetap
   aktif supaya jaringan yang lambat tidak menumpuk permintaan lain.
 - **Tidak ada berkas yang dibuang** — berkas yang tiba belakangan tetap dipasang.
   Versi lama memakai batas keras 12 detik per berkas dan membuang berkas yang
   telat, sehingga di hosting lambat hampir tidak ada tekstur yang berhasil dipasang
-  dan tampilannya tampak LOW-QUALITY.
+  dan tampilannya tampak LOW-QUALITY. Sekarang slot antrean hanya dilepas setelah
+  45 detik; permintaan tetap berjalan dan hasilnya tetap dipakai.
 - **WebP sebagai format utama** — setiap citra kini punya versi `.webp`. Folder
   `assets/textures/` menyusut dari 11,5 MB menjadi 3,7 MB; total unduhan aset situs
   turun dari ~13,3 MB menjadi ~5,6 MB. Konversinya dapat direproduksi lewat
@@ -290,7 +308,33 @@ Tekstur planet dimuat **progresif** — bukan 19 berkas sekaligus:
   `.webp` keluar dari `assets/textures/` (mis. `mkdir -p /tmp/webp-bkp && mv
   assets/textures/*.webp /tmp/webp-bkp/`), atau blokir `*.webp` di tab **Network**
   DevTools, lalu muat ulang halaman dengan `Ctrl+Shift+R`. Selama pemuatan, kartu
-  HUD menampilkan indikator `TEKSTUR n/m`.
+  HUD menampilkan indikator `TEKSTUR n/19`.
+
+Urutan unduhan yang berlaku (nomor 1 = paling dulu):
+
+1. Matahari — `2k_sun`
+2. Peta daytime Bumi — `2k_earth_daymap`
+3. Awan Bumi — `2k_earth_clouds`
+4. Jupiter — `2k_jupiter`
+5. Saturnus — `2k_saturn`
+6. Mars — `2k_mars`
+7. Venus — `2k_venus_atmosphere`
+8. Merkurius — `2k_mercury`
+9. Uranus — `2k_uranus`
+10. Neptunus — `2k_neptune`
+11. Bulan — `2k_moon`
+12. Peta malam Bumi — `2k_earth_nightmap`
+13. Peta normal Bumi — `2k_earth_normal_map`
+14. Ceres — `2k_ceres_fictional`
+15. Eris — `2k_eris_fictional`
+16. Haumea — `2k_haumea_fictional`
+17. Makemake — `2k_makemake_fictional`
+18. Peta spekulasi Bumi — `2k_earth_specular_map`
+19. Cincin Saturnus — `2k_saturn_ring_alpha`
+
+Rincian teknisnya (antrean, batas 4 permintaan, failover WebP → JPG/PNG, dan
+pengukuran waktu di hosting) ada di
+[`docs/pemuatan-tekstur.md`](docs/pemuatan-tekstur.md).
 
 ---
 

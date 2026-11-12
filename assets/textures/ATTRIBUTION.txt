@@ -131,3 +131,23 @@ ImageMagick (perintah convert dan identify) tersedia.
 
 Skrip juga memverifikasi format, ukuran, kemampuan dekode, dan keberadaan kanal
 alfa pada setiap hasil konversi.
+
+
+AWAN BUMI SEBAGAI BERKAS PENDUKUNG / EARTH CLOUDS AS A SUPPORTING FILE
+======================================================================
+
+Berkas 2k_earth_clouds.jpg (awan Bumi) adalah BERKAS PENDUKUNG — bukan peta
+warna Bumi. Karena itu ia diunduh dengan PRIORITAS TINGGI: awan sangat
+terlihat pada siluet Bumi, dan pada pemuatan versi lama berkas pendukung
+baru dijadwalkan SETELAH citra induknya tiba serta diberi prioritas paling
+akhir. Akibatnya di hosting awan baru selesai diunduh pada detik ke-60,
+padahal peta daytime Bumi sudah selesai pada detik ke-14 — selama itu Bumi
+tampil sebagai gumpalan bulat prosedural.
+
+Format utama yang diunduh peramban adalah salinan .webp-nya
+(2k_earth_clouds.webp), yang ukurannya jauh lebih kecil. Berkas .jpg asli
+tetap ada di repo sebagai CADANGAN dan dipakai otomatis bila WebP tidak
+didukung atau gagal dimuat.
+
+Perubahan urutan unduhan ini TIDAK mengubah isi, format, lisensi, maupun
+atribusi berkas mana pun.

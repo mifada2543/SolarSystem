@@ -3,7 +3,7 @@
    https://www.solarsystemscope.com/textures/ — lisensi Creative Commons
    Attribution 4.0 (CC BY 4.0), sebagian besar berbasis citra NASA.
 
-   Empat hal yang sengaja dijaga:
+   Lima hal yang sengaja dijaga:
    1. GAGAL-AMAN — bila berkas tidak ada atau gagal dimuat (mis. dibuka lewat
       file://), tekstur prosedural dari core.js tetap dipakai; start-up tidak
       pernah menunggu selamanya.
@@ -15,9 +15,15 @@
       (mis. GitHub Pages) hampir semua berkas melewati batas itu lalu DIBUANG,
       sehingga tampilan tertahan di tekstur prosedural 512x256 yang jauh lebih
       rendah mutunya. Sekarang berkas yang telat tetap dipasang saat tiba.
-   4. PEMUATAN PROGRESIF — antrean berprioritas (Matahari dulu), maksimal 4
-      permintaan bersamaan. Adegan langsung tampil dengan tekstur prosedural,
-      lalu meningkat sendiri ke citra 2K begitu berkasnya tiba. */
+   4. PEMUATAN PROGRESIF — antrean berprioritas, maksimal 4 permintaan
+      bersamaan. Adegan langsung tampil dengan tekstur prosedural, lalu
+      meningkat sendiri ke citra 2K begitu berkasnya tiba.
+   5. BERKAS PENDUKUNG DIJADWALKAN BERSAMAAN DENGAN CITRA INDUKNYA — awan
+      Bumi, peta malam, peta normal, peta spekulasi, dan cincin Saturnus TIDAK
+      boleh menunggu citra induknya selesai. Kalau dirantai, awan Bumi baru
+      turun ~46 detik setelah peta daytime (terukur: hari ini di domain live,
+      peta daytime selesai di detik ke-14, awan baru selesai di detik ke-60),
+      dan selama itu penampilannya gumpalan bulat prosedural — terlihat rusak. */
 import * as THREE from 'three/webgpu';
 import {bodies,TEXPROG} from './state.js';
 import {renderer} from './bodies.js';
@@ -51,11 +57,16 @@ const NIGHT=['2k_earth_nightmap.webp','2k_earth_nightmap.jpg'],
    Raksasa gas & Venus (peta awan) harus tanpa tonjolan — permukaannya bukan batuan. */
 const ROCK=['mercury','mars','moon','ceres','eris','haumea','makemake'];
 
-/* Prioritas unduhan: yang paling sering dilihat didahulukan. */
-const PRIO=['sun','earth','jupiter','saturn','mars','venus','mercury','uranus','neptune','moon',
-            'ceres','eris','haumea','makemake'];
-const rankOf=id=>{const i=PRIO.indexOf(id);return i<0?90:i};
-const RANK_EXTRA=95;   /* peta tambahan Bumi & cincin Saturnus: paling akhir */
+/* Prioritas unduhan berdasarkan DAMPAK VISUAL, bukan urutan daftar: angka kecil
+   lebih dulu. Awan Bumi ada di urutan ketiga karena sangat terlihat dan karena
+   saat masih berupa placeholder prosedural ia paling jelasrusak. Peta spekulasi
+   (dasar peta kasar) paling akhir karena pengaruhnya subtil. */
+const PRIO={
+  sun:0, earth:1, 'earth.clouds':2, jupiter:3, saturn:4, mars:5, venus:6, mercury:7,
+  uranus:8, neptune:9, moon:10, 'earth.night':11, 'earth.normal':12,
+  ceres:13, eris:14, haumea:15, makemake:16, 'earth.spec':17, 'saturn.ring':18
+};
+const rankOf=id=>PRIO[id]===undefined?90:PRIO[id];
 
 /* Deteksi dukungan WebP: canvas.toDataURL('image/webp') mengembalikan PNG
    data-URL pada peramban yang tidak mendukung WebP. */
@@ -64,7 +75,7 @@ const WEBP=(()=>{try{const c=document.createElement("canvas");c.width=c.height=1
 
 const MAXC=4;      /* permintaan bersamaan — di bawah batas 6 koneksi/origin browser */
 const SLOT=45000;  /* hanya melepas slot antrean; permintaan TETAP berjalan dan hasilnya dipakai */
-const cache=new Map(),done=new Set();
+const cache=new Map(),done=new Set(),extrasDone=new Set();
 const loader=new THREE.TextureLoader();
 const Q=[];let active=0;
 
@@ -115,6 +126,15 @@ function fetchTex(files,srgb,rank){
   cache.set(key,p);return p;
 }
 
+/* Muat + catat progres. Berhasil maupun gagal tetap dihitung "selesai" supaya
+   indikator HUD tidak menggantung selamanya. */
+function load1(files,srgb,rank){
+  TEXPROG.total++;
+  return fetchTex(files,srgb,rank)
+    .then(t=>{TEXPROG.done++;return t})
+    .catch(e=>{TEXPROG.failed++;TEXPROG.done++;throw e});
+}
+
 /* Peta kasar (roughness) dibalik dari peta spekulasi Bumi: laut = spekulasi tinggi
    -> kasar rendah -> memantul; daratan = spekulasi nol -> kasar penuh. */
 function fromSpecular(t){
@@ -130,47 +150,62 @@ function fromSpecular(t){
   }catch(e){return null} // canvas bisa terkunci bila gambar lintas-asal
 }
 
-async function earthExtras(m,b){
-  const r=await Promise.all([fetchTex(NORMAL,false,RANK_EXTRA),fetchTex(NIGHT,true,RANK_EXTRA),
-                             fetchTex(CLOUD,true,RANK_EXTRA),fetchTex(SPEC,false,RANK_EXTRA)]);
-  const nm=r[0],nt=r[1],cl=r[2],rm=fromSpecular(r[3]);
-  if(nm){m.bumpMap=null;m.normalMap=nm;m.normalScale=new THREE.Vector2(.75,.75)}
-  if(nt)m.emissiveMap=nt;                       // lampu kota sisi malam (kini citra nyata)
-  if(rm){m.roughness=1;m.roughnessMap=rm}
-  m.needsUpdate=true;
-  if(cl&&b.clouds){const old=b.clouds.material.map;b.clouds.material.map=cl;b.clouds.material.needsUpdate=true;
-    if(old)setTimeout(()=>{try{old.dispose()}catch(e){}},0)}
+/* Lepas tekstur lama (placeholder prosedural) setelah yang baru terpasang. */
+function dropOld(t){if(t)setTimeout(()=>{try{t.dispose()}catch(e){}},0)}
+
+/* Pendukung Bumi: dijadwalkan BERSAMAAN dengan peta daytime, dan tiap berkas
+   dipasang sendiri begitu tiba — tidak menunggu berkas lain selesai. */
+function earthExtras(b){
+  if(extrasDone.has(b))return;extrasDone.add(b);
+  // Awan — paling terlihat; tanpa ini Bumi tampil gumpalan bulat prosedural.
+  load1(CLOUD,true,PRIO['earth.clouds']).then(t=>{
+    if(t&&b.clouds){const old=b.clouds.material.map;
+      b.clouds.material.map=t;b.clouds.material.needsUpdate=true;dropOld(old)}
+  }).catch(()=>{});
+  // Lampu kota sisi malam (kini citra nyata).
+  load1(NIGHT,true,PRIO['earth.night']).then(t=>{
+    if(t){b.mesh.material.emissiveMap=t;b.mesh.material.needsUpdate=true}
+  }).catch(()=>{});
+  // Peta normal -> relief permukaan (peta warna tidak dipakai sebagai tonjolan).
+  load1(NORMAL,false,PRIO['earth.normal']).then(t=>{
+    if(t){const m=b.mesh.material;m.bumpMap=null;m.normalMap=t;
+      m.normalScale=new THREE.Vector2(.75,.75);m.needsUpdate=true}
+  }).catch(()=>{});
+  // Peta kasar, dibalik dari peta spekulasi.
+  load1(SPEC,false,PRIO['earth.spec']).then(t=>{
+    const rm=fromSpecular(t);
+    if(rm){const m=b.mesh.material;m.roughness=1;m.roughnessMap=rm;m.needsUpdate=true}
+  }).catch(()=>{});
 }
 
 /* Cincin Saturnus: tekstur adalah penampang radial cincin A–F (1,11–2,27 R),
    sedangkan geometri hanya 1,35–2,4 R. UV ditulis ulang mengikuti jari-jari
    fisik, bukan lewat matriks tekstur, agar tekstur prosedural cadangan tetap
    memakai UV aslinya. */
-async function saturnRing(b){
-  const t=await fetchTex(RING,true,RANK_EXTRA),ring=b.grp.userData.ring;
-  if(!t||!ring)return;
-  const uv=ring.geometry.attributes.uv,pos=ring.geometry.attributes.position,R=b.r;
-  for(let k=0;k<pos.count;k++){
-   const len=Math.hypot(pos.getX(k),pos.getY(k));
-   uv.setXY(k,Math.min(Math.max((len/R-1.11)/1.16,0),1),1);
-  }
-  uv.needsUpdate=true;
-  ring.material.map=t;ring.material.needsUpdate=true;
+function saturnRing(b){
+  if(extrasDone.has(b))return;extrasDone.add(b);
+  load1(RING,true,PRIO['saturn.ring']).then(t=>{
+    const ring=b.grp.userData.ring;
+    if(!t||!ring)return;
+    const uv=ring.geometry.attributes.uv,pos=ring.geometry.attributes.position,R=b.r;
+    for(let k=0;k<pos.count;k++){
+     const len=Math.hypot(pos.getX(k),pos.getY(k));
+     uv.setXY(k,Math.min(Math.max((len/R-1.11)/1.16,0),1),1);
+    }
+    uv.needsUpdate=true;
+    ring.material.map=t;ring.material.needsUpdate=true;
+  }).catch(()=>{});
 }
 
-/* Pasang citra nyata pada sebuah body. Dipanggil saat berkasnya benar-benar
-   tiba — bisa jauh setelah frame pertama, dan itu memangADESIFINASI. */
-async function applyTo(b,t){
+/* Pasang citra utama pada sebuah body. Dipanggil saat berkasnya tiba. */
+function applyBody(b,t){
   const m=b.mesh.material,id=b.d.id,old=m.map;
   m.map=t;
   if(id==='earth')m.bumpMap=null;
   else if(ROCK.includes(id)){m.bumpMap=t;m.bumpScale=.3}
   else m.bumpMap=null;
   m.needsUpdate=true;
-  TEXPROG.done++;
-  if(old)setTimeout(()=>{try{old.dispose()}catch(e){}},0);  /* lepas placeholder lama */
-  if(id==='earth')await earthExtras(m,b);
-  if(id==='saturn')await saturnRing(b);
+  dropOld(old);
 }
 
 /* Panggil setelah tahap pembangunan body. Idempoten: body yang sudah diproses
@@ -179,11 +214,13 @@ async function applyTo(b,t){
 export function applyTextures(){
   const list=bodies.slice().sort((a,b)=>rankOf(a.d.id)-rankOf(b.d.id));
   for(const b of list){
-   const files=FILE[b.d.id];
-   if(!files)continue;
-   if(done.has(b))continue;
-   done.add(b);
-   TEXPROG.total++;
-   fetchTex(files,true,rankOf(b.d.id)).then(t=>applyTo(b,t)).catch(()=>{TEXPROG.failed++;TEXPROG.done++});
+   const id=b.d.id,files=FILE[id];
+   if(files&&!done.has(b)){
+    done.add(b);
+    load1(files,true,rankOf(id)).then(t=>applyBody(b,t)).catch(()=>{});
+   }
+   // Pendukung dijadwalkan pada saat yang sama dengan citra induknya.
+   if(id==='earth')earthExtras(b);
+   if(id==='saturn')saturnRing(b);
   }
 }

@@ -37,7 +37,7 @@ circles, so what you see genuinely tracks the simulation date you pick.
 
 Three things set it apart:
 
-- **Fully offline** — three.js, 19 2K textures (WebP + JPG/PNG fallbacks), CSS, and
+- **Fully offline** — three.js, 19 2K images (WebP + JPG/PNG fallbacks), CSS, and
   every module ship inside the project folder. Zero outbound requests, so it keeps
   working without an internet connection.
 - **Modern renderer** — `WebGPURenderer` with automatic fallback to WebGL2 when WebGPU
@@ -89,6 +89,8 @@ Three things set it apart:
   file fails to load, the view stays intact with no error message. Loading is
   **progressive**: the app appears instantly with procedural textures, then each real
   image (WebP) is swapped in as it arrives — no file is ever dropped for being late.
+  Earth's clouds carry a high priority (position 3) and are installed on their own
+  as soon as they arrive, so they no longer linger as procedural round blobs.
 - **Constellations**, an asteroid belt with pixel-based point sizing, elliptical orbits
   for 7 moons (Moon, Io, Europa, Ganymede, Callisto, Titan, Triton — shaped by each
   body's own eccentricity) that appear automatically once their host is close enough,
@@ -243,7 +245,7 @@ SolarSystem/
 │   ├── textures/          19 2K files (jpg/png) + 19 .webp versions + ATTRIBUTION.txt (CC BY 4.0)
 │   │   └── convert-webp.sh  .jpg/.png → .webp conversion script (reproducible)
 │   └── logo.svg           logo & favicon
-└── docs/                  screenshots for the README
+└── docs/                  screenshots + guides (texture loading, Cloudflare cache)
 ```
 
 ### JavaScript modules
@@ -254,7 +256,7 @@ SolarSystem/
 | `data.js` | planet data (NASA/JPL) + coordinates for 22 constellations (HYG · Sky & Telescope) — **no local imports** |
 | `core.js` | procedural textures (`rnd` / `lcg` / `mk` / `blob` / `texFor` / `glowTex`) |
 | `shaders.js` | TSL: atmosphere, city lights, Saturn ring shadows |
-| `textures.js` | progressive 2K texture loader (priority queue, max 4 concurrent requests, WebP → jpg/png fallback, fail-safe → procedural) |
+| `textures.js` | progressive 2K texture loader (priority queue ranked by visual impact, max 4 concurrent requests, supporting files scheduled together with their parent image and installed independently, WebP → jpg/png fallback, fail-safe → procedural) |
 | `bodies.js` | renderer, scene, camera, object construction |
 | `orbits.js` | Kepler, scale modes, asteroid & Kuiper belts, constellations, simulation |
 | `navigate.js` | camera, picking, hover, scroll-zoom, HUD card |
@@ -271,17 +273,34 @@ Every asset is served from this repository itself: three.js in `assets/lib/`, im
 `assets/textures/`, modules in `assets/js/` — zero outbound requests, so the app keeps
 working without an internet connection.
 
-Planet textures are loaded **progressively** — not all 19 files at once:
+Textures are loaded **progressively** — not all 19 files at once. There are **19 real
+image files in total: 14 body maps** (the Sun, 8 planets, the Moon, 4 dwarf planets)
+**and 5 supporting maps** (Earth's clouds, night map, normal map, specular map, and
+Saturn's rings). Both are counted by the HUD's `TEKSTUR n/19` indicator.
 
-- **Progressive, priority-based loading** — images are scheduled in a queue, the Sun
-  first, then the following planets. The app never waits: it appears instantly with
-  procedural textures, then each real image is swapped in as it arrives. The view
-  improves on its own, with no reload needed.
+- **Progressive, priority-based loading** — images are scheduled in a queue ranked
+  by **visual impact**, not by plain list order: what is seen most often and what
+  differs most from its placeholder goes first. The app never waits: it appears
+  instantly with procedural textures, then each real image is swapped in as it
+  arrives. The view improves on its own, with no reload needed.
+- **Supporting files are scheduled together with their parent image** — Earth's
+  clouds, night map, normal map, specular map, and Saturn's rings no longer wait
+  for the parent image to finish; they all enter the queue at the same time, and
+  **each file is installed independently** as soon as it arrives. Previously the
+  supporting files were only requested after the parent image had arrived, were
+  given the lowest priority, and were bundled with a `Promise.all` — so the clouds
+  were installed only after the slowest supporting file had finished. On live
+  hosting, Earth's day map completed at second 14, but the cloud file was not
+  even **downloaded** until second 46 and only **finished** at second 60: until
+  then Earth still showed round procedural blobs. The clouds are now part of the
+  first download group and appear much sooner.
 - **At most 4 concurrent requests** — the queue keeps four requests in flight so a slow
   connection does not pile up the rest.
 - **Nothing is thrown away** — a file that arrives late is still installed. The old
   loader used a hard 12-second deadline per file and discarded late files, so on slow
   hosting almost no texture ever made it in and the result looked LOW-QUALITY.
+  Now the queue slot is released only after 45 seconds; the request keeps running
+  and its result is still used.
 - **WebP as the primary format** — every image now also has a `.webp` version. The
   `assets/textures/` folder shrinks from 11.5 MB to 3.7 MB, and the site's total asset
   download drops from ~13.3 MB to ~5.6 MB. The conversion is reproducible via
@@ -294,7 +313,33 @@ Planet textures are loaded **progressively** — not all 19 files at once:
   out of `assets/textures/` (e.g. `mkdir -p /tmp/webp-bkp && mv
   assets/textures/*.webp /tmp/webp-bkp/`), or block `*.webp` in the DevTools
   **Network** tab, then reload with `Ctrl+Shift+R`. While loading, the HUD card shows
-  a `TEKSTUR n/m` indicator.
+  a `TEKSTUR n/19` indicator.
+
+The download order in effect (number 1 = first):
+
+1. Sun — `2k_sun`
+2. Earth day map — `2k_earth_daymap`
+3. Earth clouds — `2k_earth_clouds`
+4. Jupiter — `2k_jupiter`
+5. Saturn — `2k_saturn`
+6. Mars — `2k_mars`
+7. Venus — `2k_venus_atmosphere`
+8. Mercury — `2k_mercury`
+9. Uranus — `2k_uranus`
+10. Neptune — `2k_neptune`
+11. Moon — `2k_moon`
+12. Earth night map — `2k_earth_nightmap`
+13. Earth normal map — `2k_earth_normal_map`
+14. Ceres — `2k_ceres_fictional`
+15. Eris — `2k_eris_fictional`
+16. Haumea — `2k_haumea_fictional`
+17. Makemake — `2k_makemake_fictional`
+18. Earth specular map — `2k_earth_specular_map`
+19. Saturn's rings — `2k_saturn_ring_alpha`
+
+The technical details (queue, 4-request limit, WebP → JPG/PNG failover, and the
+hosting timing measurements) are documented in
+[`docs/pemuatan-tekstur.md`](docs/pemuatan-tekstur.md) (Indonesian).
 
 ---
 
