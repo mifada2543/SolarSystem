@@ -48,3 +48,86 @@ kembali ke tekstur prosedural (lihat js/textures.js).
 DIKONVERSI OLEH PROYEK INI / CONVERTED BY THIS PROJECT
 2k_earth_normal_map.png  <- 2k_earth_normal_map.tif
 2k_earth_specular_map.png <- 2k_earth_specular_map.tif
+
+
+KONVERSI WEBP / WEBP CONVERSIONS
+=================================
+
+Untuk mempercepat pemuatan di hosting dengan jaringan lambat, proyek ini
+membuat versi .webp dari setiap citra 2K. WebP sekarang menjadi format
+utama yang diunduh peramban, dan ukurannya jauh lebih kecil daripada
+JPEG/PNG asli.
+
+Berkas .webp dan sumbernya
+--------------------------
+    2k_sun.webp                 <- 2k_sun.jpg
+    2k_mercury.webp             <- 2k_mercury.jpg
+    2k_venus_atmosphere.webp    <- 2k_venus_atmosphere.jpg
+    2k_earth_daymap.webp        <- 2k_earth_daymap.jpg
+    2k_earth_nightmap.webp      <- 2k_earth_nightmap.jpg
+    2k_earth_clouds.webp        <- 2k_earth_clouds.jpg
+    2k_earth_normal_map.webp    <- 2k_earth_normal_map.png
+    2k_earth_specular_map.webp  <- 2k_earth_specular_map.png
+    2k_moon.webp                <- 2k_moon.jpg
+    2k_mars.webp                <- 2k_mars.jpg
+    2k_jupiter.webp             <- 2k_jupiter.jpg
+    2k_saturn.webp              <- 2k_saturn.jpg
+    2k_saturn_ring_alpha.webp   <- 2k_saturn_ring_alpha.png
+    2k_uranus.webp              <- 2k_uranus.jpg
+    2k_neptune.webp             <- 2k_neptune.jpg
+    2k_ceres_fictional.webp      <- 2k_ceres_fictional.jpg
+    2k_eris_fictional.webp       <- 2k_eris_fictional.jpg
+    2k_haumea_fictional.webp     <- 2k_haumea_fictional.jpg
+    2k_makemake_fictional.webp   <- 2k_makemake_fictional.jpg
+
+Metode konversi
+---------------
+* Citra foto/warna (planet, bulan, dwarf planet fiktif): WebP LOSSY kualitas 82.
+  Permukaan bertekstur (batu, awan, gas, permukaan fiktif) tidak memiliki
+  gradien halus yang sensitif terhadap banding, sehingga kompresi lossy aman.
+* 2k_earth_normal_map.webp: WebP LOSSLESS. Peta normal dipakai sebagai data
+  (vektor normal), bukan gambar yang dilihat mata. Kompresi lossy menggeser
+  nilai RGB dan memunculkan artefak sebagai band/gradien salah serta
+  pencahayaan bergaris-garis, jadi wajib lossless.
+* 2k_earth_specular_map.webp: WebP LOSSY kualitas 80. Peta ini hanya dipakai
+  sebagai sumber peta kasar / roughness, sehingga kualitas lossy tidak masalah.
+* 2k_saturn_ring_alpha.webp: WebP LOSSY kualitas 85 dengan kanal alfa
+  dipertahankan. Cincin Saturnus memerlukan alfa agar bagian yang harus
+  tembus pandang tetap tembus pandang, bukan kotak hitam.
+
+Ukuran: folder ini turun dari 11,5 MB (.jpg/.png) menjadi 3,7 MB (.webp).
+Total unduhan aset situs turun dari ~13,3 MB menjadi ~5,6 MB.
+
+Berkas asli tidak dihapus
+--------------------------
+Berkas sumber .jpg/.png TETAP ADA di repo ini sebagai cadangan — tidak ada
+yang dihapus. Aplikasi mencoba .webp lebih dulu; bila WebP gagal dimuat
+(peramban lama atau sistem yang tidak mendukung WebP), pemuat otomatis
+mengambil berkas .jpg/.png yang sama, lalu baru turun ke tekstur prosedural
+bila berkas itu juga gagal.
+
+Lisensi dan atribusi tidak berubah
+----------------------------------
+Sumber asli seluruh citra tetap Solar System Scope (www.solarsystemscope.com)
+dengan lisensi Creative Commons Attribution 4.0 International (CC BY 4.0).
+Konversi ke WebP hanya mengubah format berkas; isi gambarnya tidak diubah
+secara bahan. Works turunan (derived works) dari citra berlisensi CC BY 4.0
+WAJIB tetap mencantumkan sumber dan lisensi yang sama seperti citra aslinya.
+Atribusi pada berkas ini TIDAK berubah dan tidak boleh dihapus atau
+diperbaiki dengan dalih apa pun.
+
+Skrip konversi
+--------------
+Skrip konversinya ada di folder yang sama:
+
+    assets/textures/convert-webp.sh
+
+Skrip itu idempoten: berkas .webp selalu ditulis ulang dari berkas sumber
+asli (bukan dari .webp sebelumnya), sehingga hasilnya deterministik dan dapat
+direproduksi. Pemakaian: jalankan dari dalam folder assets/textures/ dengan
+ImageMagick (perintah convert dan identify) tersedia.
+
+    ./convert-webp.sh
+
+Skrip juga memverifikasi format, ukuran, kemampuan dekode, dan keberadaan kanal
+alfa pada setiap hasil konversi.

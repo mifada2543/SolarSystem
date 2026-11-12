@@ -36,9 +36,9 @@ konfigurasi yang tampil benar-benar mengikuti tanggal simulasi yang kamu pilih.
 
 Tiga hal yang membedakannya:
 
-- **Offline sepenuhnya** — three.js, 19 tekstur 2K, CSS, dan seluruh modul ikut
-  disertakan di folder proyek. Nol permintaan ke luar, jadi aplikasi tetap jalan
-  tanpa koneksi internet.
+- **Offline sepenuhnya** — three.js, 19 tekstur 2K (WebP + cadangan JPG/PNG), CSS,
+  dan seluruh modul ikut disertakan di folder proyek. Nol permintaan ke luar, jadi
+  aplikasi tetap jalan tanpa koneksi internet.
 - **Renderer modern** — `WebGPURenderer` dengan mundur otomatis ke WebGL2 bila WebGPU
   tidak tersedia, memakai TSL (*Three Shading Language*) untuk shader kustom.
 - **Tanpa build step** — murni ES modules + `importmap`. Tidak ada `npm install`,
@@ -85,7 +85,10 @@ Tiga hal yang membedakannya:
 - **Tiga skala** — `Penjelajah` (ukuran & jarak sama-sama dikompres), `Relatif`, dan
   `Saintifik (≈1:1)` di mana 1 satuan dunia = 10⁶ km.
 - **Tekstur planet 2K** tersimpan lokal dengan **cadangan prosedural otomatis** — bila
-  berkas gagal dimuat, tampilan tetap utuh tanpa pesan galat.
+  berkas gagal dimuat, tampilan tetap utuh tanpa pesan galat. Pemuatannya
+  **progresif**: aplikasi tampil seketika dengan tekstur prosedural, lalu tiap citra
+  asli (WebP) dipasang pada tempatnya begitu tiba — tidak ada berkas yang dibuang
+  hanya karena telat.
 - **Rasi bintang**, sabuk asteroid dengan ukuran titik berbasis piksel, lintasan elips
   7 bulan (Bulan, Io, Europa, Ganymede, Callisto, Titan, Triton — dibentuk dari
   eksentrisitas masing-masing) yang muncul otomatis saat
@@ -232,7 +235,8 @@ SolarSystem/
 │   ├── css/style.css      seluruh CSS, termasuk peta & media query ≤860px
 │   ├── js/                11 modul ES (lihat tabel di bawah)
 │   ├── lib/               three.js 0.186.1 lokal — core, webgpu, tsl, OrbitControls
-│   ├── textures/          19 berkas 2K (jpg/png) + ATTRIBUTION.txt (CC BY 4.0)
+│   ├── textures/          19 berkas 2K (jpg/png) + 19 versi .webp + ATTRIBUTION.txt (CC BY 4.0)
+│   │   └── convert-webp.sh  skrip konversi .jpg/.png → .webp (dapat direproduksi)
 │   └── logo.svg           logo & favicon
 └── docs/                  tangkapan layar untuk README
 ```
@@ -245,7 +249,7 @@ SolarSystem/
 | `data.js` | data planet (NASA/JPL) + koordinat 22 rasi (HYG · Sky & Telescope) — **tanpa impor lokal** |
 | `core.js` | tekstur prosedural (`rnd` / `lcg` / `mk` / `blob` / `texFor` / `glowTex`) |
 | `shaders.js` | TSL: atmosfer, lampu kota, bayangan cincin Saturnus |
-| `textures.js` | pemuat tekstur 2K (gagal-aman → prosedural) |
+| `textures.js` | pemuat tekstur 2K progresif (antrean prioritas, maks. 4 permintaan, WebP → cadangan jpg/png, gagal-aman → prosedural) |
 | `bodies.js` | renderer, scene, kamera, pembuatan objek |
 | `orbits.js` | Kepler, mode skala, sabuk asteroid & sabuk Kuiper, rasi, simulasi |
 | `navigate.js` | kamera, pick, hover, scroll-zoom, kartu HUD |
@@ -255,6 +259,38 @@ SolarSystem/
 
 Arah impor selalu ke bawah menuju `state.js` / `data.js`; keduanya tidak mengimpor modul
 lokal apa pun sehingga siklus impor tidak mungkin terjadi.
+
+### Aset & pemuatan tekstur
+
+Seluruh aset dilayani dari repo ini sendiri: three.js di `assets/lib/`, citra di
+`assets/textures/`, modul di `assets/js/` — nol permintaan ke luar, jadi aplikasi
+tetap jalan tanpa internet.
+
+Tekstur planet dimuat **progresif** — bukan 19 berkas sekaligus:
+
+- **Pemuatan progresif berprioritas** — citra dijadwalkan dalam antrean, Matahari
+  lebih dulu, lalu planet berikutnya. Aplikasi tidak menunggu: ia tampil seketika
+  dengan tekstur prosedural, lalu tiap citra asli dipasang pada tempatnya begitu
+  tiba. Tampilan "membaik" sendiri tanpa perlu muat ulang.
+- **Maksimal 4 permintaan bersamaan** — antrean menjaga empat permintaan tetap
+  aktif supaya jaringan yang lambat tidak menumpuk permintaan lain.
+- **Tidak ada berkas yang dibuang** — berkas yang tiba belakangan tetap dipasang.
+  Versi lama memakai batas keras 12 detik per berkas dan membuang berkas yang
+  telat, sehingga di hosting lambat hampir tidak ada tekstur yang berhasil dipasang
+  dan tampilannya tampak LOW-QUALITY.
+- **WebP sebagai format utama** — setiap citra kini punya versi `.webp`. Folder
+  `assets/textures/` menyusut dari 11,5 MB menjadi 3,7 MB; total unduhan aset situs
+  turun dari ~13,3 MB menjadi ~5,6 MB. Konversinya dapat direproduksi lewat
+  `assets/textures/convert-webp.sh`.
+- **Cadangan `.jpg` / `.png`** — berkas asli tetap ada di repo dan dipakai otomatis
+  bila WebP gagal dimuat, atau bila peramban sama sekali tidak mendukung WebP
+  (langsung meminta berkas aslinya). Bila semua gagal, barulah tekstur prosedural
+  yang dipakai.
+- **Cara memaksa versi `.jpg`** — untuk memeriksa jalur cadangan, pindahkan berkas
+  `.webp` keluar dari `assets/textures/` (mis. `mkdir -p /tmp/webp-bkp && mv
+  assets/textures/*.webp /tmp/webp-bkp/`), atau blokir `*.webp` di tab **Network**
+  DevTools, lalu muat ulang halaman dengan `Ctrl+Shift+R`. Selama pemuatan, kartu
+  HUD menampilkan indikator `TEKSTUR n/m`.
 
 ---
 
@@ -266,6 +302,7 @@ lokal apa pun sehingga siklus impor tidak mungkin terjadi.
 | Shader | TSL (`colorNode` / `opacityNode` / `emissiveNode`) |
 | Modul | ES modules + `importmap`, tanpa bundler |
 | Pustaka | three.js **0.186.1** (lokal, tanpa CDN) |
+| Aset | WebP (utama) + JPG/PNG (cadangan), semuanya lokal |
 | Backend | tidak ada — murni statis |
 | Data | NASA Planetary Fact Sheet + JPL (epoch J2000) |
 
@@ -299,9 +336,11 @@ importmap di `index.html`. Daftar berkasnya juga tertulis sebagai komentar di `i
   sudah tertinggal, dan jumlah ini terus bertambah)
 - **Tekstur planet** — [Solar System Scope — Textures](https://www.solarsystemscope.com/textures/),
   **CC BY 4.0** (sebagian besar berbasis citra NASA). Daftar berkas, termasuk konversi
-  `.tif` → `.png`, tercatat di [`assets/textures/ATTRIBUTION.txt`](assets/textures/ATTRIBUTION.txt);
+  `.tif` → `.png` dan `.jpg`/`.png` → `.webp`, tercatat di
+  [`assets/textures/ATTRIBUTION.txt`](assets/textures/ATTRIBUTION.txt);
   kredit juga tampil di dalam aplikasi. **Jangan hapus berkas ini** — atribusi adalah
-  syarat lisensinya.
+  syarat lisensinya. Versi `.webp` adalah karya turunan: lisensi dan atribusi yang
+  berlaku tetap sama persis.
 - **Rasi bintang** — koordinat & magnitudo bintang dari
   [HYG Database](https://github.com/astronexus/HYG-Database) (v41, posisi J2000, RA dalam jam);
   garisnya mengikuti figuran resmi **Sky & Telescope 2014** — berkas
@@ -350,4 +389,6 @@ Hal-hal berikut mudah terlewat dan berakibat fatal bila diubah sembarangan:
 
 Tekstur planet berlisensi **CC BY 4.0**; atribusinya wajib tetap ada baik di
 `assets/textures/ATTRIBUTION.txt` maupun di kredit dalam aplikasi. Data bersumber dari
-NASA/JPL (domain publik).
+NASA/JPL (domain publik). Berkas `.webp` di `assets/textures/` adalah karya turunan dari
+citra yang sama — lisensi CC BY 4.0 dan atribusi Solar System Scope tetap berlaku
+tanpa perubahan.

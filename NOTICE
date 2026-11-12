@@ -127,6 +127,22 @@ The conversion is documented in assets/textures/ATTRIBUTION.txt. The project
 also contains original procedural fallback textures and fictional artistic
 textures identified in that file.
 
+WEBP CONVERSIONS
+----------------
+
+The project also ships WebP versions of the same planet textures, generated
+from the JPEG/PNG files listed above by assets/textures/convert-webp.sh:
+
+* assets/textures/2k_*.webp (19 files)
+
+These WebP files are converted copies of the same CC BY 4.0 Solar System Scope
+materials — a format change only, with no change to the imagery itself. The
+original JPEG/PNG files are kept in the repository as fallbacks and are used
+automatically when a browser cannot load WebP. The CC BY 4.0 license and the
+required Solar System Scope attribution continue to apply unchanged to the
+originals and to the WebP versions alike; a derived work must keep the same
+source and license notice. See assets/textures/ATTRIBUTION.txt.
+
 TRADEMARKS AND NAMES
 --------------------
 

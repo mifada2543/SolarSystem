@@ -2,6 +2,12 @@
 <meta name="description" content="Visualisasi 3D tata surya interaktif berbasis Three.js WebGPU: orbit Kepler, skala visualisasi, dan data planet dari NASA Planetary Fact Sheet.">
 <link rel="stylesheet" href="./assets/css/style.css">
 <link rel="icon" href="./assets/logo.svg" type="image/svg+xml">
+<!-- Tekstur planet dimuat progresif (Matahari & Bumi dulu) saat adegan sudah tampil.
+     Preload ini membuat 3 citra yang paling sering dilihat mulai turun bersamaan
+     dengan bundel three.js, sehingga visual utama cepat lengkap di jaringan lambat. -->
+<link rel="preload" as="image" href="./assets/textures/2k_sun.webp" type="image/webp" fetchpriority="high">
+<link rel="preload" as="image" href="./assets/textures/2k_earth_daymap.webp" type="image/webp" fetchpriority="high">
+<link rel="preload" as="image" href="./assets/textures/2k_jupiter.webp" type="image/webp" fetchpriority="high">
 <script type="importmap">
 {"imports":{
  "three":"./assets/lib/three.webgpu.min.js",
@@ -28,7 +34,7 @@
 <label for="un">Skala Waktu (per detik × kecepatan)</label><select id="un"></select><label for="sm">Skala Visualisasi</label><select id="sm"><option value="0">Penjelajah</option><option value="1">Relatif</option><option value="2">Saintifik (≈1:1)</option></select><label>Tanggal Simulasi</label><div class="dt" id="dt"></div><input type="date" id="cd" aria-label="Tanggal kustom" style="width:100%;margin-top:4px;background:#0c1224;border:1px solid var(--bd);border-radius:8px;padding:7px;min-height:34px">
 <label>Opsi</label><div class="sp"><button id="bu">km · °C</button><button id="bm">Kurangi animasi</button><button id="bh" title="Jeda saat objek dipilih">Jeda saat pilih</button><button id="bb" title="Titik pusat massa sistem tempat Matahari bergerak">Barycenter</button><button id="bc">Rasi bintang</button><button id="bs">Suara: MATI</button></div>
 <p class="kb">Pintasan: <b>Spasi</b> jeda · <b>1–8</b> planet · <b>9</b> Bulan · <b>0</b> Matahari · <b>Esc</b> tutup panel / tampilan seluruh · <b>/</b> cari</p>
-<p class="kb cr">Tekstur planet: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener">Solar System Scope</a>, <b>CC BY 4.0</b> (sebagian besar berbasis citra NASA). Bila berkas tekstur tidak termuat, tampilan otomatis memakai tekstur prosedural. Data: NASA Planetary Fact Sheet &amp; JPL.</p>
+<p class="kb cr">Tekstur planet: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener">Solar System Scope</a>, <b>CC BY 4.0</b> (sebagian besar berbasis citra NASA). Tekstur dimuat progresif (versi WebP, ~7 MB) — bila berkas tidak termuat, tampilan otomatis memakai tekstur prosedural. Data: NASA Planetary Fact Sheet &amp; JPL.</p>
 </div></div>
 <div id="sr"><input id="q" type="search" placeholder="Cari planet atau bulan…" aria-label="Cari objek" autocomplete="off"><ul id="res"></ul></div>
 <div id="hud" class="g"><div id="hudl"></div><div id="sc" title="Ukuran planet &amp; jarak orbit diskalakan untuk visualisasi; lintasan planet digambar sebagai elips Kepler (e, i, Ω, ϖ dari JPL); bulan &amp; sabuk disederhanakan">SKALA VISUALISASI · simulasi kira-kira</div></div>

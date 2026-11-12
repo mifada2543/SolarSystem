@@ -37,9 +37,9 @@ circles, so what you see genuinely tracks the simulation date you pick.
 
 Three things set it apart:
 
-- **Fully offline** — three.js, 19 2K textures, CSS, and every module ship inside the
-  project folder. Zero outbound requests, so it keeps working without an internet
-  connection.
+- **Fully offline** — three.js, 19 2K textures (WebP + JPG/PNG fallbacks), CSS, and
+  every module ship inside the project folder. Zero outbound requests, so it keeps
+  working without an internet connection.
 - **Modern renderer** — `WebGPURenderer` with automatic fallback to WebGL2 when WebGPU
   is unavailable, using TSL (Three Shading Language) for custom shaders.
 - **No build step** — plain ES modules + `importmap`. No `npm install`, no bundler,
@@ -86,7 +86,9 @@ Three things set it apart:
 - **Three scales** — `Explorer` (distances and sizes both compressed), `Relative`, and
   `Scientific (≈1:1)` where 1 world unit = 10⁶ km.
 - **2K planet textures** stored locally with **automatic procedural fallback** — if a
-  file fails to load, the view stays intact with no error message.
+  file fails to load, the view stays intact with no error message. Loading is
+  **progressive**: the app appears instantly with procedural textures, then each real
+  image (WebP) is swapped in as it arrives — no file is ever dropped for being late.
 - **Constellations**, an asteroid belt with pixel-based point sizing, elliptical orbits
   for 7 moons (Moon, Io, Europa, Ganymede, Callisto, Titan, Triton — shaped by each
   body's own eccentricity) that appear automatically once their host is close enough,
@@ -238,7 +240,8 @@ SolarSystem/
 │   ├── css/style.css      all CSS, including the map and ≤860px media queries
 │   ├── js/                11 ES modules (see table below)
 │   ├── lib/               three.js 0.186.1 local — core, webgpu, tsl, OrbitControls
-│   ├── textures/          19 2K files (jpg/png) + ATTRIBUTION.txt (CC BY 4.0)
+│   ├── textures/          19 2K files (jpg/png) + 19 .webp versions + ATTRIBUTION.txt (CC BY 4.0)
+│   │   └── convert-webp.sh  .jpg/.png → .webp conversion script (reproducible)
 │   └── logo.svg           logo & favicon
 └── docs/                  screenshots for the README
 ```
@@ -251,7 +254,7 @@ SolarSystem/
 | `data.js` | planet data (NASA/JPL) + coordinates for 22 constellations (HYG · Sky & Telescope) — **no local imports** |
 | `core.js` | procedural textures (`rnd` / `lcg` / `mk` / `blob` / `texFor` / `glowTex`) |
 | `shaders.js` | TSL: atmosphere, city lights, Saturn ring shadows |
-| `textures.js` | 2K texture loader (fail-safe → procedural) |
+| `textures.js` | progressive 2K texture loader (priority queue, max 4 concurrent requests, WebP → jpg/png fallback, fail-safe → procedural) |
 | `bodies.js` | renderer, scene, camera, object construction |
 | `orbits.js` | Kepler, scale modes, asteroid & Kuiper belts, constellations, simulation |
 | `navigate.js` | camera, picking, hover, scroll-zoom, HUD card |
@@ -261,6 +264,37 @@ SolarSystem/
 
 Imports always point downward toward `state.js` / `data.js`; neither imports any local
 module, so circular imports are impossible.
+
+### Assets & texture loading
+
+Every asset is served from this repository itself: three.js in `assets/lib/`, images in
+`assets/textures/`, modules in `assets/js/` — zero outbound requests, so the app keeps
+working without an internet connection.
+
+Planet textures are loaded **progressively** — not all 19 files at once:
+
+- **Progressive, priority-based loading** — images are scheduled in a queue, the Sun
+  first, then the following planets. The app never waits: it appears instantly with
+  procedural textures, then each real image is swapped in as it arrives. The view
+  improves on its own, with no reload needed.
+- **At most 4 concurrent requests** — the queue keeps four requests in flight so a slow
+  connection does not pile up the rest.
+- **Nothing is thrown away** — a file that arrives late is still installed. The old
+  loader used a hard 12-second deadline per file and discarded late files, so on slow
+  hosting almost no texture ever made it in and the result looked LOW-QUALITY.
+- **WebP as the primary format** — every image now also has a `.webp` version. The
+  `assets/textures/` folder shrinks from 11.5 MB to 3.7 MB, and the site's total asset
+  download drops from ~13.3 MB to ~5.6 MB. The conversion is reproducible via
+  `assets/textures/convert-webp.sh`.
+- **`.jpg` / `.png` fallback** — the original files stay in the repo and are used
+  automatically when WebP cannot be loaded, or when the browser does not support
+  WebP at all (it then asks for the original file straight away). Only if those
+  fail too does the procedural texture take over.
+- **Forcing the `.jpg` version** — to check the fallback path, move the `.webp` files
+  out of `assets/textures/` (e.g. `mkdir -p /tmp/webp-bkp && mv
+  assets/textures/*.webp /tmp/webp-bkp/`), or block `*.webp` in the DevTools
+  **Network** tab, then reload with `Ctrl+Shift+R`. While loading, the HUD card shows
+  a `TEKSTUR n/m` indicator.
 
 ---
 
@@ -272,6 +306,7 @@ module, so circular imports are impossible.
 | Shaders | TSL (`colorNode` / `opacityNode` / `emissiveNode`) |
 | Modules | ES modules + `importmap`, no bundler |
 | Library | three.js **0.186.1** (local, no CDN) |
+| Assets | WebP (primary) + JPG/PNG (fallback), all local |
 | Backend | none — purely static |
 | Data | NASA Planetary Fact Sheet + JPL (J2000 epoch) |
 
@@ -306,10 +341,11 @@ update the importmap in `index.html`. The file list is also written as a comment
   is already out of date and these counts keep growing)
 - **Planet textures** — [Solar System Scope — Textures](https://www.solarsystemscope.com/textures/),
   **CC BY 4.0** (mostly based on NASA imagery). The file list, including the
-  `.tif` → `.png` conversions, is recorded in
+  `.tif` → `.png` and `.jpg`/`.png` → `.webp` conversions, is recorded in
   [`assets/textures/ATTRIBUTION.txt`](assets/textures/ATTRIBUTION.txt); credit is also
   shown inside the app. **Do not delete these files** — attribution is a condition of the
-  license.
+  license. The `.webp` versions are derived works: the very same license and
+  attribution apply.
 - **Constellations** — star coordinates and magnitudes from the
   [HYG Database](https://github.com/astronexus/HYG-Database) (v41, J2000 positions, RA in
   hours); the lines follow the official **Sky & Telescope 2014** figures — the
@@ -358,4 +394,6 @@ These are easy to overlook and break things badly if changed casually:
 
 Planet textures are licensed under **CC BY 4.0**; that attribution must remain, both in
 `assets/textures/ATTRIBUTION.txt` and in the in-app credit. Data comes from NASA/JPL
-(public domain).
+(public domain). The `.webp` files in `assets/textures/` are derived works of the same
+images — the CC BY 4.0 license and the Solar System Scope attribution carry over
+unchanged.

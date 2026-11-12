@@ -1,7 +1,7 @@
 /* ===== UI: panel info, kontrol, pencarian, HUD, audio ===== */
 import * as THREE from 'three/webgpu';
 import {PL,SRC} from './data.js';
-import {st,UNITS,J2000,$,ID,fmt,bodies,cLb,sig,NR,SM,cam,simDays,setSim,setExpl,planetByKey} from './state.js';
+import {st,UNITS,J2000,$,ID,fmt,bodies,cLb,sig,NR,SM,cam,simDays,setSim,setExpl,planetByKey,TEXPROG} from './state.js';
 import {scene,camera,controls,renderer,BK,dispose} from './bodies.js';
 import {applyScale,toggleCons,consOn,MN} from './orbits.js';
 import {flyTo,offFor,dimOrbits,bindCanvas,navInfo} from './navigate.js';
@@ -66,7 +66,10 @@ export function updHud(){
  const n=navInfo(),imp=st.imp;
  const jarak=st.sel?(imp?fmt(n.d*.621371)+" mi":fmt(n.d)+" km"):"—";
  const kec=imp?fmt(n.s*.621371,1)+" mi/s":fmt(n.s,1)+" km/s";
- const t=`SIMULASI<br><b>${st.paused?"Jeda":"Berjalan"}</b> · Kecepatan: <b>${st.speed}x</b> · ${UNITS[st.unit][0]} per detik<br>TANGGAL <b>${st.date.toLocaleDateString(ID,{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"})}</b><br>DIFOKUSKAN KE <b>${st.sel?st.sel.d.alias:"—"}</b><br>JARAK <b>${jarak}</b><br>KECEPATAN <b>${kec}</b><br>KAMERA <b>${cam}</b><br>SKALA <b>${["Penjelajah","Relatif","Saintifik"][SM]}</b><br>RENDERER <b>${BK}</b>`;
+ /* Indikator pemuatan tekstur: muncul selama masih ada citra yang belum tiba,
+    dan tetap muncul bila ada yang gagal dimuat (biarkan prosedural). */
+ const tp=(TEXPROG.total&&(TEXPROG.done<TEXPROG.total||TEXPROG.failed))?`<br>TEKSTUR <b>${TEXPROG.done}/${TEXPROG.total}</b>${TEXPROG.failed?` · ${TEXPROG.failed} gagal`:""}`:"";
+ const t=`SIMULASI<br><b>${st.paused?"Jeda":"Berjalan"}</b> · Kecepatan: <b>${st.speed}x</b> · ${UNITS[st.unit][0]} per detik<br>TANGGAL <b>${st.date.toLocaleDateString(ID,{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"})}</b><br>DIFOKUSKAN KE <b>${st.sel?st.sel.d.alias:"—"}</b><br>JARAK <b>${jarak}</b><br>KECEPATAN <b>${kec}</b><br>KAMERA <b>${cam}</b><br>SKALA <b>${["Penjelajah","Relatif","Saintifik"][SM]}</b>${tp}<br>RENDERER <b>${BK}</b>`;
  if(t!==hudS){hudS=t;$("#hudl").innerHTML=t} // di-throttle: tidak lagi menulis DOM tiap frame + tanpa aria-live
 }
 

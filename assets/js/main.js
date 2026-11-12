@@ -18,10 +18,10 @@ async function init(){
  await setLd("Menyiapkan hamparan bintang…");
  buildStars();buildSun();
  await setLd("Memuat tekstur…");
- buildPlanets();await applyTextures();        // tekstur CC BY (gagal-aman, lihat js/textures.js)
+ buildPlanets();applyTextures();               // tekstur CC BY (gagal-aman & progresif, lihat js/textures.js)
  await setLd("Membangun sistem orbit…");
  buildEarthMoon();buildCons();buildBelt();buildKuiper();buildBary();applyScale(0);buildMoonRings();
- await applyTextures();                       // Bulan & satelit baru ditambahkan di atas
+ applyTextures();                              // Bulan & satelit baru ditambahkan di atas
  await setLd("Memuat data planet…");
 }
 

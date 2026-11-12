@@ -26,6 +26,13 @@ export const orbOf=m=>SM===2?m:SM===1?m/149.6*10:14*Math.sqrt(m/149.6);
 export const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 export const D2R=Math.PI/180,NR=()=>orbOf(5906.4);
 
+/* ===== PROGRES TEKSTUR =====
+   Diisi oleh textures.js: total = jumlah berkas citra nyata yang dijadwalkan,
+   done = yang sudah tiba & terpasang, failed = yang gagal dimuat.
+   Dipakai ui.js untuk menampilkan "TEKSTUR 7/14" di HUD selama pemuatan. */
+export const TEXPROG={total:0,done:0,failed:0};
+window.__texProg=TEXPROG;   /* hook diagnostik: progres pemuatan tekstur (bisa dipantau dari konsol) */
+
 /* Diisi oleh bodies.js / orbits.js (push-only, sehingga boleh berupa const) */
 export const bodies=[],cLb=[];
 export const ac=new AbortController(),sig={signal:ac.signal};
